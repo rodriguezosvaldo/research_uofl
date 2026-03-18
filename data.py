@@ -165,34 +165,10 @@ def table_to_dict(table_name, table):
             records[f"record{idx}"] = record_dict
     return kv
 
-incident_number, incident_date, all_tables = structured_extraction('./pdfs/test.pdf')
-incident_structured_dict = tables_dict_format(all_tables)
-incident = Incident(incident_number=incident_number, incident_date=incident_date)
-incident.add_table("Patient Information", incident_structured_dict["Patient Information"])
-incident.add_table("Medications/Allergies/History/Immunizations", incident_structured_dict["Medications/Allergies/History/Immunizations"])
-incident.add_table("Narrative", incident_structured_dict["Narrative"])
-incident.add_table("Specialty Patient - Advanced Airway", incident_structured_dict["Specialty Patient - Advanced Airway"])
-incident.add_table("Specialty Patient - CPR", incident_structured_dict["Specialty Patient - CPR"])
-incident.add_table("Incident Details", incident_structured_dict["Incident Details"])
-incident.add_table("Insurance Details", incident_structured_dict["Insurance Details"])
-incident.add_table("Mileage", incident_structured_dict["Mileage"])
 
-# JSON storage of tables_type_1 (THIS IS A TEST TO SEE IF THE FORMAT JSON FITS THE REQUIREMENTS)
-import json
 
-tables_type_1_json = {
-    "Patient Information": incident.tables["Patient Information"],
-    "Medications/Allergies/History/Immunizations": incident.tables["Medications/Allergies/History/Immunizations"],
-    "Narrative": incident.tables["Narrative"],
-    "Specialty Patient - Advanced Airway": incident.tables["Specialty Patient - Advanced Airway"],
-    "Specialty Patient - CPR": incident.tables["Specialty Patient - CPR"],
-    "Incident Details": incident.tables["Incident Details"],
-    "Insurance Details": incident.tables["Insurance Details"],
-    "Mileage": incident.tables["Mileage"],
-}
 
-with open("JSON/tables_type_1.json", "w", encoding="utf-8") as f:
-    json.dump(tables_type_1_json, f, ensure_ascii=False, indent=2)
+
 
 # Table variables: (DEFINIR LUEGO SI MOVERLO A UN ARCHIVO EXTERNO) DEBUGGIN IN PROCESS==================
 # patient_information_clinical_impression_variables = {
