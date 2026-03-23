@@ -4,44 +4,7 @@ import re
 from classDef import Incident
 
 
-# Extract all data from the PDF and save it to a CSV file (raw data, no formatting)
-def extract_all_to_csv(pdf_path, output_path='./pdfs/raw_csv/{filename}.csv'):
-    values = []
-    
-    with pdfplumber.open(pdf_path) as pdf:
-        # Extract the incident number from the first page
-        page = pdf.pages[0]
-        cropped = page.crop((0, 0, page.width, 80))
-        text = cropped.extract_text()
-        match_incident_number = re.search(r'Incident #:\s*(\S+)', text)
-        if match_incident_number:
-            incident_number = match_incident_number.group()
-        else:
-            incident_number = 'Incident:Unknown'
 
-        # Extract the information before the first table
-        header = '\n'.join(page.extract_text().split('\n')[0:3])
-        values.append(header + '\n')
-        
-        # Extract tables data from the rest of the pages
-        for page in pdf.pages:
-            tables = page.extract_tables()
-            for table in tables:
-                for row in table:
-                    row_cells = []
-                    for cell in row:
-                        if cell: 
-                            row_cells.append(str(cell).strip())
-                        else:
-                            row_cells.append('')
-                    values.append(','.join(row_cells)) 
-    
-    csv_text = '\n'.join(values)
-    filename = incident_number.replace(':', '_').replace('#', '_')
-    complete_path = output_path.format(filename=filename)
-    
-    with open(complete_path, 'w', encoding='utf-8') as csv:
-        csv.write(csv_text)
 
 def structured_extraction(pdf_path):
     incident_number = ''
@@ -138,105 +101,100 @@ def table_to_dict(table_name, table):
         for row in table[1:]:
             if not row:
                 continue
-            for i in range(0, len(row), 2):
-                key = (row[i] or "").strip()
-                if not key:
-                    continue
-                val = (row[i+1] or "").strip() if i + 1 < len(row) else ""
-                kv[key] = val
-    elif table_name in tables_type_2:
-        headers = table[1]                    # ['Time', 'AVPU', ...]
-        records = {}
-        for idx, row in enumerate(table[2:]):    # skip the header row
-            if not row:
-                continue
-            # match headers with values
-            record_dict = dict(zip(headers, row))
-            records[f"record{idx}"] = record_dict
-        
-    elif table_name in tables_type_3:
-        headers = table[0]                    # ['Time', 'Category', ...]
-        records = {}
-        for idx, row in enumerate(table[1:]):    # skip the header row
-            if not row:
-                continue
-            # match headers with values
-            record_dict = dict(zip(headers, row))
-            records[f"record{idx}"] = record_dict
+            #THIS APPROACH ITERATES OVER THE ROWS JUMPING 2 COLUMNS AT A TIME, EXTRACTING THE KEY AND THE VALUE
+            # for i in range(0, len(row), 2):
+            #     key = (row[i] or "").strip()
+            #     if not key:
+            #         continue
+            #     val = (row[i+1] or "").strip() if i + 1 < len(row) else ""
+            #     kv[key] = val
+
+            #THIS APPROACH USES REGULAR EXPRESSIONS TO MATCH THE KEY AND THE VALUE
+            for variable in variables_to_extract.table_name:
+                for idx, cell in enumerate(row):
+                    if re.search(variable, str(cell or "")):
+                        value = row[idx + 1] if idx + 1 < len(row) else ""
+                        kv[variable] = (value or "").strip()
+                        break
     return kv
 
-
-
-
+    if table_name in tables_type_2:
+        for row in table[1:]:
+            if not row:
+                continue
+            
 
 
 # Table variables: (DEFINIR LUEGO SI MOVERLO A UN ARCHIVO EXTERNO) DEBUGGIN IN PROCESS==================
-# patient_information_clinical_impression_variables = {
-#     "class_name": "patientInformationClinicalImpression",
-#     "Last": "last",
-#     "First": "first",
-#     "Middle": "middle",
-#     "Name Suffix": "name_suffix",
-#     "Sex": "sex",
-#     "Gender": "gender",
-#     "DOB": "dob",
-#     "Age": "age",
-#     "Weight": "weight",
-#     "Height": "height",
-#     "Pedi Color": "pedi_color",
-#     "SSN": "ssn",
-#     "Advance Directives": "advance_directives",
-#     "Resident Status": "resident_status",
-#     "Patient Resides in Service Area": "patient_resides_in_service_area",
-#     "Temporary Residence Type": "temporary_residence_type",
-#     "Address": "address",
-#     "Address 2": "address_2",
-#     "City": "city",
-#     "State": "state",
-#     "Zip": "zip_code",
-#     "Country": "country",
-#     "Tel": "tel",
-#     "Physician": "physician",
-#     "Phys. Tel": "phys_tel",
-#     "Ethnicity": "ethnicity",
-#     "Race": "race",
-#     # Clinical Impression
-#     "Primary Impression": "primary_impression",
-#     "Secondary Impression": "secondary_impression",
-#     "Protocols Used": "protocols_used",
-#     "Local Protocol Provided": "local_protocol_provided",
-#     "Care Level": "care_level",
-#     "Anatomic Position": "anatomic_position",
-#     "Onset Time": "onset_time",
-#     "Last Known Well": "last_known_well",
-#     "Chief Complaint": "chief_complaint",
-#     "Duration": "duration",
-#     "Duration Units": "duration_units",
-#     "Secondary Complaint": "secondary_complaint",
-#     "Secondary Duration": "secondary_duration",
-#     "Secondary Duration Units": "secondary_duration_units",
-#     "Patient Level of Distress": "patient_level_of_distress",
-#     "Signs Symptoms": "signs_symptoms",
-#     "Injury": "injury",
-#     "Additional Injury": "additional_injury",
-#     "Mechanism of Injury": "mechanism_of_injury",
-#     "Medical Trauma": "medical_trauma",
-#     "Barriers of Care": "barriers_of_care",
-#     "Alcohol Drugs": "alcohol_drugs",
-#     "Pregnancy": "pregnancy",
-#     "Initial Patient Acuity": "initial_patient_acuity",
-#     "Final Patient Acuity": "final_patient_acuity",
-#     "Patient Activity": "patient_activity",
-# }
+variables_to_extract = {
+    "Patient Information": [
+        "Last",
+        "First",
+        "Middle",
+        "Name Suffix",
+        "Sex",
+        "Gender",
+        "DOB",
+        "Age",
+        "Weight-lbs",
+        "Weight-kg",
+        "Height-ft",
+        "Height- cm",
+        "Pedi Color",
+        "SSN",
+        "Advance Directives",
+        "Resident Status",
+        "Patient Resides in Service Area",
+        "Temporary Residence Type",
+        "Address",
+        "Address 2",
+        "City",
+        "State",
+        "Zip",
+        "Country",
+        "Tel",
+        "Physician",
+        "Phys. Tel",
+        "Ethnicity",
+        "Race",
+        # Clinical Impression
+        "Primary Impression",
+        "Secondary Impression",
+        "Protocols Used",
+        "Local Protocol Provided",
+        "Care Level",
+        "Anatomic Position",
+        "Onset Time",
+        "Last Known Well",
+        "Chief Complaint",
+        "Duration",
+        "Duration Units",
+        "Secondary Complaint",
+        "Secondary Duration",
+        "Secondary Duration Units",
+        "Patient Level of Distress",
+        "Signs Symptoms",
+        "Injury",
+        "Additional Injury",
+        "Mechanism of Injury",
+        "Medical Trauma",
+        "Barriers of Care",
+        "Alcohol Drugs",
+        "Pregnancy",
+        "Initial Patient Acuity",
+        "Final Patient Acuity",
+        "Patient Activity",
+    ],
+    "Medications/Allergies/History/Immunizations": [
+        "Medications",
+        "Allergies",
+        "History",
+        "Immunizations",
+    ],
 
-# medications_allergies_history_immunizations_variables = {
-#     "class_name": "medicationsAllergiesHistoryImmunizations",
-#     "Medications": "medications",
-#     "Allergies": "allergies",
-#     "History": "history",
-#     "Immunizations": "immunizations",
-#     "Last Oral Intake": "last_oral_intake",
-# }
+    
+}
+
 
 # narrative_variables = {
 #     "class_name": "narrative",

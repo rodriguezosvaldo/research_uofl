@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 pdfs/
 JSON/
+raw_csv/
