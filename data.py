@@ -38,13 +38,13 @@ def tables_dict_format(all_tables):
     # tables_dict_format: {section_name: dictionary_of_that_section}
     # (e.g. {"Patient Information": {last: value, first: value, ...}, 
     #        "Medications/Allergies/History/Immunizations": {medications: value, allergies: value, ...}, etc.) 
-
+    incident_dict = {}
     sections = {} 
+    duplicates = {}
     # sections will have the following structure:
     # {section_name: table_of_that_section} 
     # (e.g. {"Patient Information": [['Patient Information', None, None, ...]], 
     #       "Medications/Allergies/History/Immunizations": [['Medications/Allergies/History/Immunizations', None, None, ...]], etc.)
-
     for table in all_tables:
         if not table:
             continue
@@ -53,52 +53,92 @@ def tables_dict_format(all_tables):
         if title in (
             "Patient Information",
             "Medications/Allergies/History/Immunizations",
-            "Vital Signs",
-            "Vitals Calculations",
-            "Flow Chart",
-            "Assessments",
-            "Narrative",
-            "Specialty Patient - Advanced Airway",
             "Specialty Patient - CPR",
             "Incident Details",
             "Insurance Details",
             "Mileage",
+            "Specialty Patient - Motor Vehicle Collision",
+            "Specialty Patient - Trauma Criteria",
+            "Specialty Patient - CDC 2011 Trauma Criteria",
+            "Transfer Details",
+            "Patient Transport Details",
+            "Patient Refusal",
+            # Tables type 2:
+            "Vital Signs",
+            "Vitals Calculations",
+            "Flow Chart",
+            "Specialty Patient - Advanced Airway",
+            "Specialty Patient - Spinal Immobilization",
+            "ECG",
+            # Tables type 3:
+            "Assessments",
+            # Tables type 4:
+            "Narrative",
+            # Tables type 5:
+            "Consumables",
         ):
-            sections[title] = table
-
-    tables_dict_format = {}
+            if title in sections:
+                duplicates[title] = table
+            else:
+                sections[title] = table 
+        
+    if duplicates:
+        for duplicate_title, table in duplicates.items():
+            sections[duplicate_title].extend(table[1:]) 
+    
+    # Debugging:
     for table_name, table in sections.items():
-        tables_dict_format[table_name] = table_to_dict(table_name, table)
-    return tables_dict_format
+        print(table_name)
+        print(table)
+        print("--------------------------------")
+    
+    incident_dict = {}
+    for table_name, table in sections.items():
+        incident_dict[table_name] = table_to_dict(table_name, table)
+    return incident_dict
 
 def table_to_dict(table_name, table):
     #Converts a table into a dictionary
     #Type 1 tables example: converts from "Patient Information": [['Patient Information', None, None, ...]] to "Patient Information": {last: value, first: value, ...}
     #Type 2 tables example: converts from "Vital Signs": [['Time', 'AVPU', 'Side', ...]] to "Vital Signs": 0: {time: value, avpu: value, side: value, ...}, 1: {time: value, avpu: value, side: value, ...}, etc.
     #Type 3 tables example: converts from "Assessments": [['Time', 'Category', 'Category Comments', 'Subcategory', 'Subcategory Comments', 'Subcategory Comments Status']] to "Assessments": 0: {time: value, category: value, category_comments: value, subcategory: value, subcategory_comments: value, subcategory_comments_status: value}, 1: {time: value, category: value, category_comments: value, subcategory: value, subcategory_comments: value, subcategory_comments_status: value}, etc.
-    kv = {}
+    incident_dict = {}
     tables_type_1 = [
-        "Patient Information", 
-        "Medications/Allergies/History/Immunizations", 
-        "Narrative", 
-        "Specialty Patient - CPR", 
+        "Patient Information",
+        "Medications/Allergies/History/Immunizations",
+        "Specialty Patient - CPR",
         "Incident Details",
         "Insurance Details",
         "Mileage",
+        "Specialty Patient - Motor Vehicle Collision",
+        "Specialty Patient - Trauma Criteria",
+        "Specialty Patient - CDC 2011 Trauma Criteria",
+        "Transfer Details",
+        "Patient Transport Details",
+        "Patient Refusal"
     ]
     tables_type_2 = [
         "Vital Signs",
         "Vitals Calculations",
         "Flow Chart",
         "Specialty Patient - Advanced Airway",
+        "Specialty Patient - Spinal Immobilization",
+        "ECG",
     ]
-    tables_type_3 = [
-        "Assessments",
+    # tables_type_3 = [
+    #     "Assessments",
+    # ]
+    tables_type_4 = [
+        "Narrative",
+    ]
+    tables_type_5 = [
+        "Consumables",
     ]
 
-    # skip the title row (e.g. 'Patient Information')
+    
     if table_name in tables_type_1:
-        for row in table[1:]:
+        incident_dict[table_name] = {}
+        for row in table[1:]: # skip the title row (e.g. 'Patient Information')
             if not row:
                 continue
             #THIS APPROACH ITERATES OVER THE ROWS JUMPING 2 COLUMNS AT A TIME, EXTRACTING THE KEY AND THE VALUE
@@ -110,23 +150,50 @@ def table_to_dict(table_name, table):
             #     kv[key] = val
 
             #THIS APPROACH USES REGULAR EXPRESSIONS TO MATCH THE KEY AND THE VALUE
-            for variable in variables_to_extract.table_name:
+            for variable in variables_to_extract[table_name]:
                 for idx, cell in enumerate(row):
                     if re.search(variable, str(cell or "")):
-                        value = row[idx + 1] if idx + 1 < len(row) else ""
-                        kv[variable] = (value or "").strip()
+                        value = row[idx + 1] 
+                        incident_dict[table_name][variable] = value.strip()
                         break
-    return kv
 
-    if table_name in tables_type_2:
-        for row in table[1:]:
+    elif table_name in tables_type_2:
+        incident_dict[table_name] = []
+        headers = table[1]
+        for row in table[2:]: # skip the title row (e.g. 'Vital Signs') and the headers row
             if not row:
                 continue
-            
+            record = {}
+            for idx, cell in enumerate(row):
+                if cell:
+                    record[headers[idx]] = cell if cell else "" 
+            incident_dict[table_name].append(record)
+
+    elif table_name in tables_type_4:
+        incident_dict[table_name] = {}
+        incident_dict[table_name]["Narrative"] = table[1][0] if table[1] else ""
+
+    elif table_name in tables_type_5:
+        incident_dict[table_name] = []
+        for row in table[2:]:  # Saltar título y headers
+            if not row:
+                continue
+            for i in range(0, len(row), 2):
+                if i + 1 >= len(row):
+                    break
+                num = (i // 2) + 1  # 1, 2, 3, ...
+                description = (row[i] or "").strip()
+                qty = (row[i + 1] or "").strip()
+                if description or qty:
+                    incident_dict[table_name].append({
+                        f"Description {num}": description,
+                        f"Qty {num}": qty
+                    })
+    return incident_dict
 
 
-# Table variables: (DEFINIR LUEGO SI MOVERLO A UN ARCHIVO EXTERNO) DEBUGGIN IN PROCESS==================
 variables_to_extract = {
+    # Tables type 1 variables:
     "Patient Information": [
         "Last",
         "First",
@@ -191,180 +258,289 @@ variables_to_extract = {
         "History",
         "Immunizations",
     ],
+    "Specialty Patient - CPR": [
+        "Cardiac Arrest",
+        "Cardiac Arrest Etiology",
+        "Estimated Time of Arrest",
+        "Est Time Collapse to 911",
+        "Est Time Collapse to CPR",
+        "Arrest Witnessed By",
+        "CPR Initiated By",
+        "Time 1st CPR",
+        "CPR Feedback",
+        "ITD Used",
+        "Applied AED",
+        "Applied By",
+        "Defibrillated",
+        "CPR Type",
+        "Prearrival CPR Instructions",
+        "First Defibrillated By",
+        "Time of First Defib",
+        "Initial ECG Rhythm",
+        "Rhythm at Destination",
+        "Hypothermia",
+        "End of Event",
+        "ROSC",
+        "ROSC Time",
+        "ROSC Occurred",
+        "Resuscitation Discontinued",
+        "Discontinued Reason",
+        "Resuscitation",
+        "Expired",
+        "Time", 
+        "Date",
+        "Physician",
+    ],
+    "Incident Details": [
+        "Location Type",
+        "Location",
+        "Address",
+        "Address 2",
+        "Mile Marker",
+        "City",
+        "County",
+        "State",
+        "Zip",
+        "Country",
+        "Medic Unit",
+        "Medic Vehicle",
+        "Run Type",
+        "Response Mode",
+        "Response Mode Descriptors",
+        "Shift",
+        "Zone",
+        "Level of Service",
+        "EMD Complaint",
+        "EMD Card Number",
+        "Dispatch Priority",
+        # Destination Details
+        "Disposition",
+        "Unit Disposition",
+        "Patient Evaluation and/or Care Disposition",
+        "Crew Disposition",
+        "Transport Disposition",
+        "Transport Mode",
+        "Reason for Refusal or Release",
+        "Transport Mode Descriptors",
+        "Transport Due To",
+        "Transported To",
+        "Requested By",
+        "Transferred To",
+        "Transferred Unit",
+        "Destination",
+        "Department",
+        "Address",
+        "Address 2",
+        "City",
+        "County",
+        "State",
+        "Zip",
+        "Country",
+        "Zone",
+        "Condition at Destination",
+        "State Wristband",
+        "Destination Record",
+        "Trauma Registry ID",
+        "STEMI Registry ID",
+        "Stroke Registry ID",
+        # Incident Times
+        "PSAP Call",
+        "Dispatch Notified",
+        "Call Received",
+        "Dispatched",
+        "En Route",
+        "Staged",
+        "Resp on Scene",
+        "On Scene",
+        "At Patient",
+        "Care Transferred",
+        "Depart Scene",
+        "At Destination",
+        "Pt. Transferred",
+        "Call Closed",
+        "In District",
+        "At Landing Area",
+    ],
+    "Insurance Details": [
+        "Insured Name",
+        "Relationship",
+        "Insured SSN",
+        "Insured DOB",
+        "Address1",
+        "Address2",
+        "Address3",
+        "City",
+        "State",
+        "Zip",
+        "Country",
+        "Primary Payer",
+        "Medicare",
+        "Medicaid",
+        "Primary Insurance",
+        "Primary Insurance Policy #",
+        "Primary Insurance Group Name",
+        "Primary Insurance Group #",
+        "Secondary Ins",
+        "Secondary Insurance Policy #",
+        "Secondary Insurance Group Name",
+        "Secondary Insurance Group #",
+        "Dispatch Nature",
+        "Response Urgency",
+        "Job Related Injury",
+        "Employer",
+        "Contact",
+        "Phone",
+        "Mileage to Closest Hospital",
+    ],
+    "Mileage": [
+        "Scene",
+        "Destination",
+        "Loaded Miles",
+        "Start",
+        "End",
+        "Total Miles",
+        # Delays
+        "Dispatch Delays",
+        "Response Delays",
+        "Scene Delays",
+        "Transport Delays",
+        "Turn Around Delays",
+        # Additional
+        "Additional Agencies",
+    ],
+    "Specialty Patient - Motor Vehicle Collision": [
+        "Patient Injured",
+        "Vehicle Type",
+        "Position In Vehicle",
+        "Seat Row",
+        "Number Of Vehicles",
+        "Weather",
+        "Extrication Required",
+        "Estimated Speed",
+        "Exterior Damage",
+        "Law Enforcement Case #",
+        "Collision Indicators",
+        "Damage Location",
+        "Airbag Deployment",
+        "Safety Devices",
+        "Extrication Comments",
+        "Extrication Time",
+    ],
+    "Specialty Patient - Trauma Criteria": [
+        "Anatomic",
+        "Physiologic",
+        "Mechanical",
+        "Other Conditions",
+        "Trauma Activation",
+        "Time",
+        "Date",
+        "Trauma level",
+        "Reason Not Activated",
+    ],
+    "Specialty Patient - CDC 2011 Trauma Criteria": [
+        "Vital Signs",
+        "Anatomy of Injury",
+        "Mechanism of Injury",
+        "Special Considerations",
+        "Trauma Activation",
+        "Time",
+        "Date",
+        "level",
+        "Reason Not Activated",
+    ],
+    "Transfer Details": [
+        "PAN",
+        "Prior Authorization Code Payer",
+        "PCS",
+        "Interfacility Transfer or Medical Transport Reason",
+        "ABN",
+        "CMS Service Level",
+        "ICD-9 Code",
+        "Transport Assessment",
+        "Specialty Care Transport Provider",
+        "Transfer Reason",
+        "Justification for Transfer",
+        "Other/Services",
+        "Medical Necessity",
+        "Sending Physician",
+        "Sending Record #",
+        "Receiving Physician",
+        "Condition Code",
+        "Condition Code Modifiers",
+    ],
+    "Patient Transport Details": [
+        "How was Patient Moved To Stretcher",
+        "How was Patient Moved From Ambulance",
+        "Condition of Patient at Destination",
+        "How was Patient Moved To Ambulance",
+        "Patient Position During Transport",
+    ],
+    "Patient Refusal": [
+        "Signed By"
+    ],
 
-    
+    # Tables type 2 variables:
+    "Vital Signs": [
+        "AVPU",
+        "Side",
+        "POS",
+        "BP",
+        "Pulse",
+        "RR",
+        "SPO2",
+        "ETCO2",
+        "CO",
+        "BG",
+        "Temp",
+        "Pain",
+    ],
+    "Vitals Calculations": [
+        "GCS Qualifiers",
+        "RASS",
+        "BARS",
+        "RTS",
+        "PTS",
+        "MAP",
+        "Shock Index",
+    ],
+    "Flow Chart": [
+        "Time",
+        "Treatment",
+        "Description",
+    ],
+    "ECG": [
+        "Time",
+        "Type",
+        "Rhythm",
+        "Notes",
+    ],
+    "Specialty Patient - Advanced Airway": [
+        "Airway",
+        "Indications",
+        "Monitoring Devices",
+        "Rescue Devices",
+        "Reasons Failed Intubation",
+    ],
+    "Specialty Patient - Spinal Immobilization": [
+        "Immobilization Recommended?",
+        "Altered Mental Status",
+        "Evidence of Alcohol/Drug Impairment",
+        "Distracting Injury",
+        "Neurologic Deficit",
+        "Spinal Pain/Tenderness",
+    ],
+    # Tables type 4 variables:
+    "Narrative": [
+        "Narrative",
+    ],
+    # Tables type 5 variables:
+    "Consumables": [
+        "Description",
+        "Qty",
+    ],
 }
 
 
-# narrative_variables = {
-#     "class_name": "narrative",
-#     "Narrative": "narrative",
-# }
+incident_number, incident_date, all_tables = structured_extraction('./pdfs/test.pdf')
+tables_dict_format(all_tables)
 
-# specialty_patient_advanced_airway_variables = {
-#     "class_name": "specialtyPatientAdvancedAirway",
-#     "Airway": "airway",
-#     "Indications": "indications",
-#     "Monitoring Devices": "monitoring_devices",
-#     "Rescue Devices": "rescue_devices",
-#     "Reasons Failed Intubation": "reasons_failed_intubation",
-# }
-
-# specialty_patient_cpr_variables = {
-#     "class_name": "specialtyPatientCPR",
-#     "Cardiac Arrest": "cardiac_arrest",
-#     "Cardiac Arrest Etiology": "cardiac_arrest_etiology",
-#     "Estimated Time of Arrest": "estimated_time_of_arrest",
-#     "Est Time Collapse to 911": "est_time_collapse_to_911",
-#     "Est Time Collapse to CPR": "est_time_collapse_to_cpr",
-#     "Arrest Witnessed By": "arrest_witnessed_by",
-#     "CPR Initiated By": "cpr_initiated_by",
-#     "Time 1st CPR": "time_1st_cpr",
-#     "CPR Feedback": "cpr_feedback",
-#     "ITD Used": "itd_used",
-#     "Applied AED": "applied_aed",
-#     "Applied By": "applied_by",
-#     "Defibrillated": "defibrillated",
-#     "CPR Type": "cpr_type",
-#     "Prearrival CPR Instructions": "prearrival_cpr_instructions",
-#     "First Defibrillated By": "first_defibrillated_by",
-#     "Time of First Defib": "time_of_first_defib",
-#     "Initial ECG Rhythm": "initial_ecg_rhythm",
-#     "Rhythm at Destination": "rhythm_at_destination",
-#     "Hypothermia": "hypothermia",
-#     "End of Event": "end_of_event",
-#     "ROSC": "rosc",
-#     "ROSC Time": "rosc_time",
-#     "ROSC Occurred": "rosc_occurred",
-#     "Resuscitation Discontinued": "resuscitation_discontinued",
-#     "Discontinued Reason": "discontinued_reason",
-#     "Resuscitation": "resuscitation",
-#     "In Field Pronouncement Expired": "in_field_pronouncement_expired",
-#     "In Field Pronouncement Time": "in_field_pronouncement_time",
-#     "In Field Pronouncement Date": "in_field_pronouncement_date",
-#     "In Field Pronouncement Physician": "in_field_pronouncement_physician",
-# }
-
-# incident_details_destination_details_incident_times_variables = {
-#     "class_name": "incidentDetailsDestinationDetailsIncidentTimes",
-#     # Incident Details
-#     "Location Type": "location_type",
-#     "Location": "location",
-#     "Address": "address",
-#     "Address 2": "address_2",
-#     "Mile Marker": "mile_marker",
-#     "City": "city",
-#     "County": "county",
-#     "State": "state",
-#     "Zip": "zip",
-#     "Country": "country",
-#     "Medic Unit": "medic_unit",
-#     "Medic Vehicle": "medic_vehicle",
-#     "Run Type": "run_type",
-#     "Response Mode": "response_mode",
-#     "Response Mode Descriptors": "response_mode_descriptors",
-#     "Shift": "shift",
-#     "Zone": "zone",
-#     "Level of Service": "level_of_service",
-#     "EMD Complaint": "emd_complaint",
-#     "EMD Card Number": "emd_card_number",
-#     "Dispatch Priority": "dispatch_priority",
-#     # Destination Details
-#     "Disposition": "disposition",
-#     "Unit Disposition": "unit_disposition",
-#     "Patient Evaluation Care Disposition": "patient_evaluation_care_disposition",
-#     "Crew Disposition": "crew_disposition",
-#     "Transport Disposition": "transport_disposition",
-#     "Transport Mode": "transport_mode",
-#     "Reason for Refusal or Release": "reason_for_refusal_or_release",
-#     "Transport Mode Descriptors": "transport_mode_descriptors",
-#     "Transport Due to": "transport_due_to",
-#     "Transported To": "transported_to",
-#     "Requested By": "requested_by",
-#     "Transferred To": "transferred_to",
-#     "Transferred Unit": "transferred_unit",
-#     "Destination": "destination",
-#     "Department": "department",
-#     "Address": "address",
-#     "Address 2": "address_2",
-#     "City": "city",
-#     "County": "county",
-#     "State": "state",
-#     "Zip": "zip",
-#     "Country": "country",
-#     "Zone": "zone",
-#     "Condition at Destination": "condition_at_destination",
-#     "State Wristband": "state_wristband",
-#     "Destination Record": "destination_record",
-#     "Trauma Registry ID": "trauma_registry_id",
-#     "STEMI Registry ID": "stemi_registry_id",
-#     "Stroke Registry ID": "stroke_registry_id",
-#     # Incident Times
-#     "PSAP Call": "psap_call",
-#     "Dispatch Notified": "dispatch_notified",
-#     "Call Received": "call_received",
-#     "Dispatched": "dispatched",
-#     "End Route": "end_route",
-#     "Staged": "staged",
-#     "Resp on Scene": "resp_on_scene",
-#     "On Scene": "on_scene",
-#     "At Patient": "at_patient",
-#     "Care Transferred": "care_transferred",
-#     "Depart Scene": "depart_scene",
-#     "At Destination": "at_destination",
-#     "PT Transferred": "pt_transferred",
-#     "Call Closed": "call_closed",
-#     "In District": "in_district",
-#     "At Landing Area": "at_landing_area",
-# }
-
-# insurance_details_variables = {
-#     "class_name": "insuranceDetails",
-#     "Insured Name": "insured_name",
-#     "Relationship": "relationship",
-#     "Insured SSN": "insured_ssn",
-#     "Insured DOB": "insured_dob",
-#     "Address": "address",
-#     "Address 2": "address_2",
-#     "Address 3": "address_3",
-#     "City": "city",
-#     "State": "state",
-#     "Zip": "zip",
-#     "Country": "country",
-#     "Primary Payer": "primary_payer",
-#     "Medicare": "medicare",
-#     "Medicaid": "medicaid",
-#     "Primary Insurance": "primary_insurance",
-#     "Policy Number": "policy_number",
-#     "Primary Insurance Group Name": "primary_insurance_group_name",
-#     "Group Number": "group_number",
-#     "Secondary Ins": "secondary_ins",
-#     "Secondary Policy Number": "secondary_policy_number",
-#     "Secondary Insurance Group Name": "secondary_insurance_group_name",
-#     "Group Number": "group_number",
-#     "Dispatch Nature": "dispatch_nature",
-#     "Response Urgency": "response_urgency",
-#     "Job Related Injury": "job_related_injury",
-#     "Employer": "employer",
-#     "Contact": "contact",
-#     "Phone": "phone",
-#     "Mileage to Closest Hospital": "mileage_to_closest_hospital",
-# }
-
-# mileage_delays_additional_variables = {
-#     "class_name": "mileageDelaysAdditional",
-#     "Scene": "scene",
-#     "Destination": "destination",
-#     "Loaded Miles": "loaded_miles",
-#     "Start": "start",
-#     "End": "end",
-#     "Total Miles": "total_miles",
-#     # Delays
-#     "Dispatch Delays": "dispatch_delays",
-#     "Response Delays": "response_delays",
-#     "Scene Delays": "scene_delays",
-#     "Turn Around Delays": "turn_around_delays",
-#     # Additional
-#     "Additional Agencies": "additional_agencies",
-# }
-#==========================================================================================================
