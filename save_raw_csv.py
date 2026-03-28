@@ -1,13 +1,13 @@
+import glob
+import os
 import pdfplumber
 import re
 
 
-# Extract all data from the PDF and save it to a CSV file (raw data, no formatting)
-def extract_all_to_csv(pdf_path, output_path='./pdfs/raw_csv/{filename}.csv'):
+def extract_all_to_csv(pdf_path, output_folder='./raw_csv'):
     values = []
-    
+
     with pdfplumber.open(pdf_path) as pdf:
-        # Extract the incident number from the first page
         page = pdf.pages[0]
         cropped = page.crop((0, 0, page.width, 80))
         text = cropped.extract_text()
@@ -17,29 +17,47 @@ def extract_all_to_csv(pdf_path, output_path='./pdfs/raw_csv/{filename}.csv'):
         else:
             incident_number = 'Incident:Unknown'
 
-        # Extract the information before the first table
         header = '\n'.join(page.extract_text().split('\n')[0:3])
         values.append(header + '\n')
-        
-        # Extract tables data from the rest of the pages
+
         for page in pdf.pages:
             tables = page.extract_tables()
             for table in tables:
                 for row in table:
                     row_cells = []
                     for cell in row:
-                        if cell: 
+                        if cell:
                             row_cells.append(str(cell).strip())
                         else:
                             row_cells.append('')
-                    values.append(','.join(row_cells)) 
-    
+                    values.append(','.join(row_cells))
+
     csv_text = '\n'.join(values)
     filename = incident_number.replace(':', '_').replace('#', '_')
-    complete_path = output_path.format(filename=filename)
-    
-    with open(complete_path, 'w', encoding='utf-8') as csv:
-        csv.write(csv_text)
+    output_path = os.path.join(output_folder, f'{filename}.csv')
+
+    with open(output_path, 'w', encoding='utf-8') as csv_file:
+        csv_file.write(csv_text)
 
 
-extract_all_to_csv(pdf_path='./pdfs/test.pdf', output_path='./raw_csv/test.csv')
+def process_all_pdfs(pdf_folder='./pdfs', output_folder='./raw_csv'):
+    pdf_files = sorted(glob.glob(os.path.join(pdf_folder, '*.pdf')))
+
+    if not pdf_files:
+        print(f"No PDF files found in: {pdf_folder}")
+        return
+
+    os.makedirs(output_folder, exist_ok=True)
+
+    for i, pdf_path in enumerate(pdf_files, start=1):
+        try:
+            extract_all_to_csv(pdf_path, output_folder)
+            print(f"PDF #{i} procesado: {os.path.basename(pdf_path)}")
+        except Exception as exc:
+            print(f"PDF #{i} - ERROR en {os.path.basename(pdf_path)}: {exc}")
+
+    print("\nTodos los PDFs han sido procesados.")
+
+
+if __name__ == "__main__":
+    process_all_pdfs()

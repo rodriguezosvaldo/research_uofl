@@ -1,21 +1,35 @@
 from data import structured_extraction, tables_dict_format
-import json
 from classDef import Incident
+import json
+import os
+import glob
 
-# TESTING:
-# This script extracts selected tables from test.pdf and saves them to a JSON file in the JSON folder
-# The goal is to see if the format of the JSON file fits the requirements of the project
+PDF_DIR = './pdfs'
+JSON_DIR = './JSON'
 
-incident_number, incident_date, all_tables = structured_extraction('./pdfs/test.pdf')
-incident_structured_dict = tables_dict_format(all_tables)
-incident = Incident(incident_number=incident_number, incident_date=incident_date)
-for table_name, table_data in incident_structured_dict.items():
-    incident.add_table(table_name, table_data)
+os.makedirs(JSON_DIR, exist_ok=True)
 
-for table_name, table_data in incident.tables.items():
+pdf_files = sorted(glob.glob(os.path.join(PDF_DIR, '*.pdf')))
+total = len(pdf_files)
 
-    for table_name, table_data in table_data.items():
-        print(table_name)
-        for key, value in table_data.items():
-            print(f"{key}: {value}")
-        print("--------------------------------")
+for i, pdf_path in enumerate(pdf_files, start=1):
+    incident_number, incident_date, all_tables = structured_extraction(pdf_path)
+    incident_structured_dict = tables_dict_format(all_tables)
+
+    incident = Incident(incident_number=incident_number, incident_date=incident_date)
+    for table_name, table_data in incident_structured_dict.items():
+        incident.add_table(table_name, table_data)
+
+    pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    output_path = os.path.join(JSON_DIR, f'{pdf_name}.json')
+
+    payload = {
+        'incident_number': incident.incident_number,
+        'incident_date': incident.incident_date,
+        'tables': incident.tables,
+    }
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+
+    print(f'Done {i}/{total}')

@@ -115,6 +115,4 @@ def tables_dict_format(all_tables):
         incident_dict[table_name] = table_to_dict(table_name, table)
     return incident_dict
 
-incident_number, incident_date, all_tables = structured_extraction('./pdfs/test.pdf')
-tables_dict_format(all_tables)
 
