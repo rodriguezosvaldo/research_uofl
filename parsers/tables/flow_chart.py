@@ -41,7 +41,10 @@ def parse(table):
             if value:
                 has_any_value = True
 
-        if has_any_value:
+        # Reject page-header rows injected by pdfplumber at page breaks;
+        # valid Flow Chart rows always have a HH:MM time in the Time column.
+        time_value = record.get("Time", "")
+        if has_any_value and re.match(r"^\d{2}:\d{2}$", time_value):
             records.append(record)
 
     return records

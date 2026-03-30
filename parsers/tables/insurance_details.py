@@ -6,10 +6,10 @@ def parse(table):
     expected = set(variables_to_extract["Insurance Details"])
     normalized_expected = {normalize_label(v): v for v in expected}
 
-    # PDF labels that differ from variables_to_extract
+    # PDF labels that differ from variables_to_extract.
+    # Note: "Insured's Name" normalizes to "insuredsname" which already matches
+    # the variable directly via normalized_expected — no alias needed.
     alias_map = {
-        "insuredsname": "Insured Name",
-        "insuredname": "Insured Name",
         "insuredssn": "Insured SSN",
         "insureddob": "Insured DOB",
     }

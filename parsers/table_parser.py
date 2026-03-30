@@ -1,8 +1,13 @@
+from .tables.additional import parse as parse_additional
 from .tables.assessments import parse as parse_assessments
+from .tables.clinical_impression import parse as parse_clinical_impression
 from .tables.consumables import parse as parse_consumables
+from .tables.delays import parse as parse_delays
+from .tables.destination_details import parse as parse_destination_details
 from .tables.ecg import parse as parse_ecg
 from .tables.flow_chart import parse as parse_flow_chart
 from .tables.incident_details import parse as parse_incident_details
+from .tables.incident_times import parse as parse_incident_times
 from .tables.insurance_details import parse as parse_insurance_details
 from .tables.medications_allergies_history_immunizations import parse as parse_medications_allergies_history_immunizations
 from .tables.mileage import parse as parse_mileage
@@ -25,11 +30,16 @@ def table_to_dict(table_name, table):
     # Converts a table into a dictionary using a parser file per table.
     parser_by_table = {
         "Patient Information": parse_patient_information,
+        "Clinical Impression": parse_clinical_impression,
         "Medications/Allergies/History/Immunizations": parse_medications_allergies_history_immunizations,
         "Specialty Patient - CPR": parse_specialty_patient_cpr,
         "Incident Details": parse_incident_details,
+        "Destination Details": parse_destination_details,
+        "Incident Times": parse_incident_times,
         "Insurance Details": parse_insurance_details,
         "Mileage": parse_mileage,
+        "Delays": parse_delays,
+        "Additional": parse_additional,
         "Specialty Patient - Motor Vehicle Collision": parse_specialty_patient_motor_vehicle_collision,
         "Specialty Patient - Trauma Criteria": parse_specialty_patient_trauma_criteria,
         "Specialty Patient - CDC 2011 Trauma Criteria": parse_specialty_patient_cdc_2011_trauma_criteria,
@@ -49,7 +59,7 @@ def table_to_dict(table_name, table):
 
     parser = parser_by_table.get(table_name)
     if not parser:
-        return {table_name: {}}
+        return {}
 
-    return {table_name: parser(table)}
+    return parser(table)
 

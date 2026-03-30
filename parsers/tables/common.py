@@ -30,8 +30,6 @@ def extract_patient_information(table):
         "signssymptoms": "Signs Symptoms",
         "medicaltrauma": "Medical Trauma",
         "alcoholdrugs": "Alcohol Drugs",
-        "weight": "__WEIGHT__",
-        "height": "__HEIGHT__",
     }
     normalized_expected = {
         normalize_label(variable): variable for variable in expected_variables
@@ -53,6 +51,15 @@ def extract_patient_information(table):
             normalized_key = normalize_label(key_text)
             canonical = alias_map.get(normalized_key) or normalized_expected.get(normalized_key)
 
+            # Some fields (e.g. SSN) span the full row width in the PDF, causing
+            # pdfplumber to place their value at idx+2 instead of idx+1.
+            # If value is empty, check if the next "key" slot holds the value.
+            if canonical in expected_variables and not value_text and idx + 2 < len(row):
+                candidate = str(row[idx + 2] or "").strip()
+                candidate_normalized = normalize_label(candidate)
+                if candidate_normalized not in normalized_expected and candidate_normalized not in alias_map:
+                    value_text = candidate
+
             if canonical in expected_variables:
                 extracted[canonical] = value_text
                 if canonical in {"Duration", "Secondary Duration"}:
@@ -66,23 +73,6 @@ def extract_patient_information(table):
                     extracted["Secondary Duration Units"] = value_text
                 continue
 
-            if canonical == "__WEIGHT__":
-                pounds_match = re.search(r"([0-9]*\.?[0-9]+)\s*lbs?", value_text, re.IGNORECASE)
-                kg_match = re.search(r"([0-9]*\.?[0-9]+)\s*kg", value_text, re.IGNORECASE)
-                if pounds_match:
-                    extracted["Weight-lbs"] = pounds_match.group(1)
-                if kg_match:
-                    extracted["Weight-kg"] = kg_match.group(1)
-                continue
-
-            if canonical == "__HEIGHT__":
-                feet_match = re.search(r"([0-9]*\.?[0-9]+)\s*ft", value_text, re.IGNORECASE)
-                cm_match = re.search(r"([0-9]*\.?[0-9]+)\s*cm", value_text, re.IGNORECASE)
-                if feet_match:
-                    extracted["Height-ft"] = feet_match.group(1)
-                if cm_match:
-                    extracted["Height- cm"] = cm_match.group(1)
-                continue
 
     return extracted
 

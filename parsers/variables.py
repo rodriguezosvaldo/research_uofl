@@ -9,10 +9,8 @@ variables_to_extract = {
         "Gender",
         "DOB",
         "Age",
-        "Weight-lbs",
-        "Weight-kg",
-        "Height-ft",
-        "Height- cm",
+        "Weight",
+        "Height",
         "Pedi Color",
         "SSN",
         "Advance Directives",
@@ -30,12 +28,12 @@ variables_to_extract = {
         "Phys. Tel",
         "Ethnicity",
         "Race",
-        # Clinical Impression
+    ],
+    "Clinical Impression": [
         "Primary Impression",
         "Secondary Impression",
         "Protocols Used",
-        "Local Protocol Provided",
-        "Care Level",
+        "Local Protocol Provided Care Level",
         "Anatomic Position",
         "Onset Time",
         "Last Known Well",
@@ -46,13 +44,13 @@ variables_to_extract = {
         "Secondary Duration",
         "Secondary Duration Units",
         "Patient Level of Distress",
-        "Signs Symptoms",
+        "Signs & Symptoms",
         "Injury",
         "Additional Injury",
         "Mechanism of Injury",
-        "Medical Trauma",
+        "Medical/Trauma",
         "Barriers of Care",
-        "Alcohol Drugs",
+        "Alcohol/Drugs",
         "Pregnancy",
         "Initial Patient Acuity",
         "Final Patient Acuity",
@@ -119,7 +117,8 @@ variables_to_extract = {
         "EMD Complaint",
         "EMD Card Number",
         "Dispatch Priority",
-        # Destination Details
+    ],
+    "Destination Details": [
         "Disposition",
         "Unit Disposition",
         "Patient Evaluation and/or Care Disposition",
@@ -147,9 +146,10 @@ variables_to_extract = {
         "State Wristband",
         "Destination Record",
         "Trauma Registry ID",
-        "STEMI Registry ID",
+        "STEMI Registry ID",    
         "Stroke Registry ID",
-        # Incident Times
+    ],
+    "Incident Times": [ 
         "PSAP Call",
         "Dispatch Notified",
         "Call Received",
@@ -168,7 +168,7 @@ variables_to_extract = {
         "At Landing Area",
     ],
     "Insurance Details": [
-        "Insured Name",
+        "Insured's Name",
         "Relationship",
         "Insured SSN",
         "Insured DOB",
@@ -205,13 +205,15 @@ variables_to_extract = {
         "Start",
         "End",
         "Total Miles",
-        # Delays
+    ],
+    "Delays": [
         "Dispatch Delays",
         "Response Delays",
         "Scene Delays",
         "Transport Delays",
         "Turn Around Delays",
-        # Additional
+    ],
+    "Additional": [
         "Additional Agencies",
     ],
     "Specialty Patient - Motor Vehicle Collision": [
@@ -286,6 +288,7 @@ variables_to_extract = {
     ],
     # Tables type 2 variables:
     "Vital Signs": [
+        "Time",
         "AVPU",
         "Side",
         "POS",
@@ -300,7 +303,8 @@ variables_to_extract = {
         "Pain",
     ],
     "Vitals Calculations": [
-        "GCS Qualifiers",
+        "Time",
+        "GCS(E+V+M)/Qualifiers",
         "RASS",
         "BARS",
         "RTS",
@@ -312,6 +316,7 @@ variables_to_extract = {
         "Time",
         "Treatment",
         "Description",
+        "Provider",
     ],
     "ECG": [
         "Time",
