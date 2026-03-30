@@ -40,19 +40,42 @@ def _serialize_flow_chart(rows):
 
 
 def _serialize_assessments(section):
-    """Multi-line 'Assessment time: KEY\\nFIELD: VALUE\\n...' per time block."""
+    """Serialize Assessments as 'Assessment Time' + pipe-delimited detail lines."""
     if not section or not isinstance(section, dict):
         return ""
+
     lines = []
     for time_key, fields in section.items():
-        lines.append(f"Assessment time: {time_key}")
-        if isinstance(fields, dict):
-            for field, value in fields.items():
-                if field == "Assessment Time":
-                    continue
-                v = _val(value)
-                if v:
-                    lines.append(f"{field}: {v}")
+        if ":" in time_key:
+            _, time_value = time_key.split(":", 1)
+            lines.append(f"Assessment Time: {time_value.strip()}")
+        else:
+            lines.append(f"Assessment Time: {time_key}")
+
+        if not isinstance(fields, dict) or not fields:
+            lines.append("NULL")
+            continue
+
+        for field, value in fields.items():
+            if field == "Assessment Time":
+                continue
+
+            v = _val(value)
+            if not v:
+                lines.append(f"{field} | NULL")
+                continue
+
+            bullet_lines = [part.strip() for part in v.splitlines() if part.strip()]
+            is_bulleted = bullet_lines and all(part.startswith("-") for part in bullet_lines)
+
+            if is_bulleted:
+                for part in bullet_lines:
+                    item = part.lstrip("-").strip()
+                    subcategory = item.split(":", 1)[0].strip() if ":" in item else field
+                    lines.append(f"{field} | {subcategory} | {item}")
+            else:
+                lines.append(f"{field} | {field} | {v}")
+
     return "\n".join(lines)
 
 
@@ -72,6 +95,36 @@ def _concat_newline(rows, field):
     return "\n".join(values)
 
 
+def _extract_lbs_value(raw_weight):
+    """
+    Return numeric pounds value from common weight formats.
+    Examples:
+      "110.0 lbs - 49.9 kg" -> "110.0"
+      "110.0 lbs"           -> "110.0"
+      "110.0"               -> "110.0"
+    """
+    text = _val(raw_weight)
+    if not text:
+        return ""
+    lbs_part = text.split(" - ", 1)[0].strip()
+    match = re.search(r"\d+(?:\.\d+)?", lbs_part)
+    return match.group(0) if match else ""
+
+
+def _lbs_to_kg(raw_weight):
+    """
+    Convert pounds to kilograms and return a 1-decimal string.
+    """
+    lbs_text = _extract_lbs_value(raw_weight)
+    if not lbs_text:
+        return ""
+    try:
+        lbs = float(lbs_text)
+    except ValueError:
+        return ""
+    return f"{(lbs / 2.2046226218):.1f}"
+
+
 # ── Derived Flow Chart values ──────────────────────────────────────────────────
 
 _ACCESS_RE = re.compile(
@@ -80,7 +133,14 @@ _ACCESS_RE = re.compile(
 )
 _ROUTE_RE  = re.compile(r'Route:\s*([^;(]+)', re.IGNORECASE)
 _AIRWAY_RE = re.compile(
-    r'\b(Intubat|Supraglottic|LMA|King|iGel|i-Gel|Cricotr|RSI|ETT|Trach)\b',
+    r'\b('
+    r'Nasopharyngeal\s+airway|NPA|'
+    r'Oropharyngeal\s+airway|OPA|'
+    r'i[\s-]*Gel|'
+    r'LMA|'
+    r'King|'
+    r'Endotracheal\s+tube|ETT'
+    r')\b',
     re.IGNORECASE,
 )
 _EPI_RE    = re.compile(r'epinephrine', re.IGNORECASE)
@@ -170,6 +230,12 @@ def get_value(tables, mapping, derived_cache):
         if modifier == "before_sep":
             return parts[0].strip()
         return parts[1].strip() if len(parts) > 1 else ""
+
+    if modifier == "weight_lbs" and isinstance(section_data, dict):
+        return _extract_lbs_value(section_data.get(field, ""))
+
+    if modifier == "lbs_to_kg" and isinstance(section_data, dict):
+        return _lbs_to_kg(section_data.get(field, ""))
 
     # List-based sections
     if isinstance(section_data, list):
@@ -294,8 +360,8 @@ WORD_TO_DATA_MAP = {
     "Patient Information - Gender":                            ("Patient Information", "Gender"),
     "Patient Information - DOB":                               ("Patient Information", "DOB"),
     "Patient Information - Age":                               ("Patient Information", "Age"),
-    "Patient Information - Weight-lbs":                        ("Patient Information", "Weight", "before_sep"),
-    "Patient Information - Weight-kg":                         ("Patient Information", "Weight", "after_sep"),
+    "Patient Information - Weight-lbs":                        ("Patient Information", "Weight", "weight_lbs"),
+    "Patient Information - Weight-kg":                         ("Patient Information", "Weight", "lbs_to_kg"),
     "Patient Information - Height-ft":                         ("Patient Information", "Height", "before_sep"),
     "Patient Information - Height- cm":                        ("Patient Information", "Height", "after_sep"),
     "Patient Information - Pedi Color":                        ("Patient Information", "Pedi Color"),

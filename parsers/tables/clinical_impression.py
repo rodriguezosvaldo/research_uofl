@@ -1,5 +1,5 @@
 from ..variables import variables_to_extract
-from .common import normalize_label
+from .common import normalize_label, normalize_time_to_hms
 
 
 def parse(table):
@@ -45,6 +45,8 @@ def parse(table):
                 canonical = "Secondary Duration"
 
             if canonical in expected_variables:
+                if canonical in {"Onset Time", "Last Known Well"}:
+                    value_text = normalize_time_to_hms(value_text)
                 extracted[canonical] = value_text
                 if canonical in {"Duration", "Secondary Duration"}:
                     last_duration_field = canonical

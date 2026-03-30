@@ -1,5 +1,5 @@
 from ..variables import variables_to_extract
-from .common import normalize_label
+from .common import normalize_label, normalize_time_to_hms
 
 
 def parse(table):
@@ -22,6 +22,6 @@ def parse(table):
 
             canonical = normalized_expected.get(normalize_label(key_text))
             if canonical:
-                extracted[canonical] = value_text
+                extracted[canonical] = normalize_time_to_hms(value_text)
 
     return extracted

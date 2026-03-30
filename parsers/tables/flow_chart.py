@@ -41,10 +41,16 @@ def parse(table):
             if value:
                 has_any_value = True
 
-        # Reject page-header rows injected by pdfplumber at page breaks;
-        # valid Flow Chart rows always have a HH:MM time in the Time column.
+        # Reject page-header rows injected by pdfplumber at page breaks.
+        # Valid Flow Chart rows use either HH:MM / HH:MM:SS or the PTA marker.
         time_value = record.get("Time", "")
-        if has_any_value and re.match(r"^\d{2}:\d{2}$", time_value):
+        is_valid_time = bool(
+            re.match(r"^(?:\d{2}:\d{2}(?::\d{2})?|PTA)$", time_value, flags=re.IGNORECASE)
+        )
+        if has_any_value and is_valid_time:
+            # Keep a stable normalized token for downstream processing/export.
+            if time_value.upper() == "PTA":
+                record["Time"] = "PTA"
             records.append(record)
 
     return records

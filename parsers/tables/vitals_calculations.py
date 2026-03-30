@@ -17,7 +17,11 @@ def parse(table):
 
     normalized_to_original = {normalize_label(column): column for column in wanted_columns}
     # Handle visual header variants seen in PDFs.
-    normalized_to_original[normalize_label("GCS(E+V+M)/Qualifiers")] = "GCS Qualifiers"
+    # Some PDFs render this header as "GCS Qualifiers" (or similar). Map those
+    # variants back to the canonical JSON key we expect.
+    normalized_to_original[normalize_label("GCS Qualifiers")] = "GCS(E+V+M)/Qualifiers"
+    normalized_to_original[normalize_label("GCS Qualifier")] = "GCS(E+V+M)/Qualifiers"
+    normalized_to_original[normalize_label("GCS")] = "GCS(E+V+M)/Qualifiers"
 
     index_map = {}
     for idx, header in enumerate(headers):

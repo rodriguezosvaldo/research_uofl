@@ -7,6 +7,79 @@ def normalize_label(text):
     return re.sub(r"[^a-z0-9]", "", str(text or "").lower())
 
 
+_TIME_FIELDS_TO_NORMALIZE = {
+    "Onset Time",
+    "Last Known Well",
+    "Time 1st CPR",
+    "Time of First Defib",
+    "ROSC Time",
+    "Resuscitation Discontinued",
+    "Time",
+    "Extrication Time",
+    "PSAP Call",
+    "Dispatch Notified",
+    "Call Received",
+    "Dispatched",
+    "En Route",
+    "Staged",
+    "Resp on Scene",
+    "On Scene",
+    "At Patient",
+    "Care Transferred",
+    "Depart Scene",
+    "At Destination",
+    "Pt. Transferred",
+    "Call Closed",
+    "In District",
+    "At Landing Area",
+}
+
+_TIME_RE = re.compile(r"\b(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])?\b")
+
+
+def normalize_time_to_hms(value_text):
+    """
+    Extract time and return HH:MM:SS.
+    Keeps original text if no time pattern is found.
+    """
+    text = " ".join(str(value_text or "").split())
+    if not text:
+        return ""
+
+    match = _TIME_RE.search(text)
+    if not match:
+        return text
+
+    hour = int(match.group(1))
+    minute = int(match.group(2))
+    second = int(match.group(3) or "0")
+    am_pm = (match.group(4) or "").lower()
+
+    if am_pm == "pm" and hour < 12:
+        hour += 12
+    elif am_pm == "am" and hour == 12:
+        hour = 0
+
+    return f"{hour:02d}:{minute:02d}:{second:02d}"
+
+
+def _extract_weight_lbs(value_text):
+    """
+    Normalize weight to pounds only.
+    Examples:
+      "110.0 lbs - 49.9 kg" -> "110.0"
+      "110 lbs"             -> "110"
+      "110.0"               -> "110.0"
+    """
+    text = str(value_text or "").strip()
+    if not text:
+        return ""
+
+    lbs_part = text.split(" - ", 1)[0].strip()
+    match = re.search(r"\d+(?:\.\d+)?", lbs_part)
+    return match.group(0) if match else lbs_part
+
+
 def extract_type_1_by_variables(table, variable_names):
     extracted = {}
     for row in table[1:]:  # Skip title row
@@ -16,7 +89,10 @@ def extract_type_1_by_variables(table, variable_names):
             for idx, cell in enumerate(row):
                 if re.search(variable, str(cell or "")):
                     value = row[idx + 1] if idx + 1 < len(row) else ""
-                    extracted[variable] = (value or "").strip()
+                    value_text = (value or "").strip()
+                    if variable in _TIME_FIELDS_TO_NORMALIZE:
+                        value_text = normalize_time_to_hms(value_text)
+                    extracted[variable] = value_text
                     break
     return extracted
 
@@ -61,6 +137,8 @@ def extract_patient_information(table):
                     value_text = candidate
 
             if canonical in expected_variables:
+                if canonical == "Weight":
+                    value_text = _extract_weight_lbs(value_text)
                 extracted[canonical] = value_text
                 if canonical in {"Duration", "Secondary Duration"}:
                     last_duration_field = canonical
