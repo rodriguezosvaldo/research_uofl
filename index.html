@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulta de Incidentes</title>
+  <style>
+    :root {
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f5f7fb;
+      color: #111827;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 40px auto;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 24px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 1.4rem;
+    }
+
+    p {
+      margin: 0 0 16px;
+      color: #4b5563;
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    button {
+      width: fit-content;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .result-box {
+      margin-top: 18px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 80px;
+      background: #f9fafb;
+      white-space: pre-wrap;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-weight: 600;
+    }
+
+    ul {
+      margin: 8px 0 0 20px;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Consulta de Parámetros por Incidente</h1>
+    <p>
+      Escribe los datos y se mostrará el valor del parámetro. Si la tabla es tipo 2 (lista de records),
+      se mostrará una lista con todos los valores del parámetro.
+    </p>
+
+    <form id="lookup-form">
+      <div>
+        <label for="jsonfile">JSON file</label>
+        <input id="jsonfile" name="jsonfile" placeholder="Section 1f_ Cardiac Arrests (2020) - 2026-03-04T162951.319.json" required>
+      </div>
+
+      <div>
+        <label for="incident">Incident #</label>
+        <input id="incident" name="incident" placeholder="E7524-00012847" required>
+      </div>
+
+      <div>
+        <label for="table">Table</label>
+        <input id="table" name="table" placeholder="Patient Information" required>
+      </div>
+
+      <div>
+        <label for="parameter">Parameter</label>
+        <input id="parameter" name="parameter" placeholder="Address" required>
+      </div>
+
+      <button type="submit">Buscar</button>
+    </form>
+
+    <div class="result-box" id="result-box">Result: (sin resultados todavía)</div>
+  </main>
+
+  <script src="./web_lookup.js"></script>
+</body>
+</html>
