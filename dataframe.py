@@ -143,7 +143,10 @@ _AIRWAY_RE = re.compile(
     r')\b',
     re.IGNORECASE,
 )
-_EPI_RE    = re.compile(r'epinephrine', re.IGNORECASE)
+_EPI_RE    = re.compile(
+    r'\b(?:epinephrine|epi\s*1\s*:\s*100(?:\s|,)?000)\b',
+    re.IGNORECASE,
+)
 
 
 def _derive_flow_chart_values(rows):
@@ -171,7 +174,7 @@ def _derive_flow_chart_values(rows):
             else:
                 first_access = treatment
 
-        if _EPI_RE.search(treatment):
+        if _EPI_RE.search(f"{treatment} {description}"):
             epi_count += 1
 
         if _AIRWAY_RE.search(treatment):
