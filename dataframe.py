@@ -14,6 +14,17 @@ def _val(v):
     return str(v).strip() if v is not None else ""
 
 
+def _strip_leading_label(value, labels):
+    """Remove a leading '<label>:' prefix from a value, if present."""
+    text = _val(value)
+    if not text:
+        return ""
+    for label in labels:
+        pattern = rf"^\s*{re.escape(label)}\s*:\s*"
+        text = re.sub(pattern, "", text, count=1, flags=re.IGNORECASE).strip()
+    return text
+
+
 def _serialize_ecg(rows):
     """'TIME TYPE RHYTHM NOTES' per row; rows separated by a single space."""
     parts = []
@@ -268,8 +279,14 @@ def extract_row(data):
     )
 
     row = {
-        "Incident Number": _val(data.get("incident_number")),
-        "Incident Date":   _val(data.get("incident_date")),
+        "Incident Number": _strip_leading_label(
+            data.get("incident_number"),
+            ["Incident #", "Incident Number"],
+        ),
+        "Incident Date": _strip_leading_label(
+            data.get("incident_date"),
+            ["Date"],
+        ),
     }
     for col_name, mapping in WORD_TO_DATA_MAP.items():
         row[col_name] = get_value(tables, mapping, derived)
