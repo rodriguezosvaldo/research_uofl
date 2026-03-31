@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consulta de Incidentes</title>
+  <title>Incident Lookup</title>
   <style>
     :root {
       font-family: Arial, Helvetica, sans-serif;
@@ -91,37 +91,30 @@
 </head>
 <body>
   <main class="container">
-    <h1>Consulta de Parámetros por Incidente</h1>
-    <p>
-      Escribe los datos y se mostrará el valor del parámetro. Si la tabla es tipo 2 (lista de records),
-      se mostrará una lista con todos los valores del parámetro.
-    </p>
+    <h1>Incident Lookup</h1>
 
     <form id="lookup-form">
       <div>
-        <label for="jsonfile">JSON file</label>
-        <input id="jsonfile" name="jsonfile" placeholder="Section 1f_ Cardiac Arrests (2020) - 2026-03-04T162951.319.json" required>
+        <label for="jsonfile">PDF File Name</label>
+        <input id="jsonfile" name="jsonfile" placeholder="" required>
       </div>
 
-      <div>
-        <label for="incident">Incident #</label>
-        <input id="incident" name="incident" placeholder="E7524-00012847" required>
-      </div>
+    
 
       <div>
         <label for="table">Table</label>
-        <input id="table" name="table" placeholder="Patient Information" required>
+        <input id="table" name="table" placeholder="" required>
       </div>
 
       <div>
         <label for="parameter">Parameter</label>
-        <input id="parameter" name="parameter" placeholder="Address" required>
+        <input id="parameter" name="parameter" placeholder="" required>
       </div>
 
-      <button type="submit">Buscar</button>
+      <button type="submit">Search</button>
     </form>
 
-    <div class="result-box" id="result-box">Result: (sin resultados todavía)</div>
+    <div class="result-box" id="result-box"></div>
   </main>
 
   <script src="./web_lookup.js"></script>
