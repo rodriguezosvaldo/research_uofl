@@ -1,11 +1,12 @@
 from data import structured_extraction, tables_dict_format
-from classDef import Incident
+from class_def import Incident
 import json
 import os
 import glob
 
 PDF_DIR = './pdfs'
-JSON_DIR = './JSON'
+OUTPUT_DIR = './output'
+JSON_DIR = os.path.join(OUTPUT_DIR, 'JSON')
 
 os.makedirs(JSON_DIR, exist_ok=True)
 

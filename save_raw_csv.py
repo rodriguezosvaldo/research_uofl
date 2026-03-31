@@ -4,7 +4,7 @@ import pdfplumber
 import re
 
 
-def extract_all_to_csv(pdf_path, output_folder='./raw_csv'):
+def extract_all_to_csv(pdf_path, output_folder='./output/raw_csv'):
     values = []
 
     with pdfplumber.open(pdf_path) as pdf:
@@ -40,7 +40,7 @@ def extract_all_to_csv(pdf_path, output_folder='./raw_csv'):
         csv_file.write(csv_text)
 
 
-def process_all_pdfs(pdf_folder='./pdfs', output_folder='./raw_csv'):
+def process_all_pdfs(pdf_folder='./pdfs', output_folder='./output/raw_csv'):
     pdf_files = sorted(glob.glob(os.path.join(pdf_folder, '*.pdf')))
 
     if not pdf_files:

@@ -50,16 +50,26 @@ function buildJsonUrl(jsonFileName) {
   // Allow entering the name with or without a .json extension.
   const normalizedName = /\.json$/i.test(inputName) ? inputName : `${inputName}.json`;
   // Encode for safety with spaces/special characters.
-  return `./JSON/${encodeURIComponent(normalizedName)}`;
+  return encodeURIComponent(normalizedName);
 }
 
 async function loadJson(jsonFileName) {
-  const url = buildJsonUrl(jsonFileName);
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Could not read the JSON file (${response.status})`);
+  const encodedName = buildJsonUrl(jsonFileName);
+  const candidateUrls = [
+    `./output/JSON/${encodedName}`,
+    `../output/JSON/${encodedName}`,
+    `../../output/JSON/${encodedName}`,
+    `../../../output/JSON/${encodedName}`,
+  ];
+
+  let lastStatus = "unknown";
+  for (const url of candidateUrls) {
+    const response = await fetch(url);
+    if (response.ok) return response.json();
+    lastStatus = String(response.status);
   }
-  return response.json();
+
+  throw new Error(`Could not read the JSON file (${lastStatus})`);
 }
 
 form.addEventListener("submit", async (event) => {

@@ -727,10 +727,12 @@ WORD_TO_DATA_MAP = {
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 
-JSON_DIR    = "./JSON"
-OUTPUT_PATH = "./output.xlsx"
+OUTPUT_DIR  = "./output"
+JSON_DIR    = os.path.join(OUTPUT_DIR, "JSON")
+OUTPUT_PATH = os.path.join(OUTPUT_DIR, "output.xlsx")
 
 if __name__ == "__main__":
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     json_files = sorted(glob.glob(os.path.join(JSON_DIR, "*.json")))
     if not json_files:
         print(f"No JSON files found in {JSON_DIR!r}. Run save_JSON_format.py first.")
