@@ -34,6 +34,11 @@ data_extraction/
 │   ├── raw_csv/             # Raw CSV output (one file per PDF)
 │   └── output.xlsx          # Final consolidated Excel file
 ├── parsers/                 # Parsing logic split by section/table type
+├── testing/
+│   └── web/
+│       ├── index.html       # Manual testing form UI
+│       └── web_lookup.js    # Fetch logic for the local lookup server
+├── README.md                # Project documentation
 ├── main.py                  # Interactive menu — the single entry point
 ├── save_JSON_format.py      # Converts PDFs → structured JSON files
 ├── save_raw_csv.py          # Converts PDFs → raw CSV files
