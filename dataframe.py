@@ -540,6 +540,14 @@ WORD_TO_DATA_MAP = {
     "Trauma Criteria - Trauma level":         ("Specialty Patient - Trauma Criteria", "Trauma level"),
     "Trauma Criteria - Reason Not Activated": ("Specialty Patient - Trauma Criteria", "Reason Not Activated"),
 
+    # ── Spinal Immobilization (all rows joined with newline) ─────────────────
+    "Spinal Immobilization - Immobilization Recommended?":          ("Specialty Patient - Spinal Immobilization", "Immobilization Recommended?",          "concat_newline"),
+    "Spinal Immobilization - Altered Mental Status":                ("Specialty Patient - Spinal Immobilization", "Altered Mental Status",                "concat_newline"),
+    "Spinal Immobilization - Evidence of Alcohol/Drug Impairment":  ("Specialty Patient - Spinal Immobilization", "Evidence of Alcohol/Drug Impairment",  "concat_newline"),
+    "Spinal Immobilization - Distracting Injury":                   ("Specialty Patient - Spinal Immobilization", "Distracting Injury",                   "concat_newline"),
+    "Spinal Immobilization - Neurologic Deficit":                   ("Specialty Patient - Spinal Immobilization", "Neurologic Deficit",                   "concat_newline"),
+    "Spinal Immobilization - Spinal Pain/Tenderness":               ("Specialty Patient - Spinal Immobilization", "Spinal Pain/Tenderness",               "concat_newline"),
+
     # ── CDC 2011 Trauma Criteria ──────────────────────────────────────────────
     "CDC 2011 Trauma Criteria - Vital Signs":            ("Specialty Patient - CDC 2011 Trauma Criteria", "Vital Signs"),
     "CDC 2011 Trauma Criteria - Anatomy of Injury":      ("Specialty Patient - CDC 2011 Trauma Criteria", "Anatomy of Injury"),
@@ -550,14 +558,6 @@ WORD_TO_DATA_MAP = {
     "CDC 2011 Trauma Criteria - Date":                   ("Specialty Patient - CDC 2011 Trauma Criteria", "Date"),
     "CDC 2011 Trauma Criteria - level":                  ("Specialty Patient - CDC 2011 Trauma Criteria", "level"),
     "CDC 2011 Trauma Criteria - Reason Not Activated":   ("Specialty Patient - CDC 2011 Trauma Criteria", "Reason Not Activated"),
-
-    # ── Spinal Immobilization (all rows joined with newline) ─────────────────
-    "Spinal Immobilization - Immobilization Recommended?":          ("Specialty Patient - Spinal Immobilization", "Immobilization Recommended?",          "concat_newline"),
-    "Spinal Immobilization - Altered Mental Status":                ("Specialty Patient - Spinal Immobilization", "Altered Mental Status",                "concat_newline"),
-    "Spinal Immobilization - Evidence of Alcohol/Drug Impairment":  ("Specialty Patient - Spinal Immobilization", "Evidence of Alcohol/Drug Impairment",  "concat_newline"),
-    "Spinal Immobilization - Distracting Injury":                   ("Specialty Patient - Spinal Immobilization", "Distracting Injury",                   "concat_newline"),
-    "Spinal Immobilization - Neurologic Deficit":                   ("Specialty Patient - Spinal Immobilization", "Neurologic Deficit",                   "concat_newline"),
-    "Spinal Immobilization - Spinal Pain/Tenderness":               ("Specialty Patient - Spinal Immobilization", "Spinal Pain/Tenderness",               "concat_newline"),
 
     # ── Incident Details ─────────────────────────────────────────────────────
     "Incident Details - Location Type":             ("Incident Details", "Location Type"),

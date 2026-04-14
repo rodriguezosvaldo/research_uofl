@@ -77,12 +77,41 @@ def tables_dict_format(all_tables):
         "Narrative",
         "Consumables",
     }
+    normalized_known_titles = {
+        re.sub(r"[^a-z0-9]", "", title.lower()): title for title in known_titles
+    }
 
     def _register(t_name, tbl):
         if t_name in sections:
             duplicates.setdefault(t_name, []).append(tbl)
         else:
             sections[t_name] = tbl
+
+    def _find_embedded_type2_titles(table):
+        """
+        Some PDFs render a type-2 section title inside the body of a larger table
+        (and may split that title across adjacent cells). Detect those rows by
+        normalizing and concatenating the full row text.
+        """
+        matches = []
+        for row_idx, row in enumerate(table):
+            if not row:
+                continue
+            normalized_row = re.sub(
+                r"[^a-z0-9]",
+                "",
+                "".join(str(cell or "") for cell in row).lower(),
+            )
+            if not normalized_row:
+                continue
+
+            for normalized_title, canonical_title in normalized_known_titles.items():
+                if canonical_title not in tables_type_2_titles:
+                    continue
+                if normalized_title == normalized_row:
+                    matches.append((row_idx, canonical_title))
+                    break
+        return matches
 
     # When a co-located title row lands on the bottom of a page, pdfplumber
     # splits the table in two: a title-only table on page N and a data-only
@@ -104,6 +133,15 @@ def tables_dict_format(all_tables):
     for table in all_tables:
         if not table:
             continue
+        embedded_type2_titles = _find_embedded_type2_titles(table)
+        for title_row_idx, embedded_title in embedded_type2_titles:
+            if title_row_idx == 0 or title_row_idx + 1 >= len(table):
+                continue
+
+            virtual_table = [[embedded_title]]
+            virtual_table.extend(table[title_row_idx + 1 :])
+            _register(embedded_title, virtual_table)
+
         first_row = table[0]
         if not first_row:
             continue
