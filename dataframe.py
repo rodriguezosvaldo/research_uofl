@@ -138,21 +138,18 @@ def _lbs_to_kg(raw_weight):
 
 # ── Derived Flow Chart values ──────────────────────────────────────────────────
 
-_ACCESS_RE = re.compile(
-    r'\b(IV|IO|Intravenous|Intraosseous|Vascular Access|PIV|EZ-IO|Central Line)\b',
-    re.IGNORECASE,
+_FIRST_ACCESS_PATTERNS = (
+    (re.compile(r"\b(intraosseous|io)\b", re.IGNORECASE), "intraosseous"),
+    (re.compile(r"\b(intravascular|intravenous|iv)\b", re.IGNORECASE), "intravascular"),
 )
 _ROUTE_RE  = re.compile(r'Route:\s*([^;(]+)', re.IGNORECASE)
-_AIRWAY_RE = re.compile(
-    r'\b('
-    r'Nasopharyngeal\s+airway|NPA|'
-    r'Oropharyngeal\s+airway|OPA|'
-    r'i[\s-]*Gel|'
-    r'LMA|'
-    r'King|'
-    r'Endotracheal\s+tube|ETT'
-    r')\b',
-    re.IGNORECASE,
+_AIRWAY_PATTERNS = (
+    (re.compile(r"\b(nasopharyngeal\s+airway|npa)\b", re.IGNORECASE), "Nasopharyngeal airway (NPA)"),
+    (re.compile(r"\b(oropharyngeal\s+airway|opa)\b", re.IGNORECASE), "Oropharyngeal airway (OPA)"),
+    (re.compile(r"\b(i[\s-]*gel)\b", re.IGNORECASE), "iGel"),
+    (re.compile(r"\b(lma)\b", re.IGNORECASE), "LMA"),
+    (re.compile(r"\b(king)\b", re.IGNORECASE), "King"),
+    (re.compile(r"\b(endotracheal\s+tube|ett)\b", re.IGNORECASE), "Endotracheal tube (ETT)"),
 )
 _EPI_RE    = re.compile(
     r'\b(?:epinephrine|epi\s*1\s*:\s*100(?:\s|,)?000)\b',
@@ -168,35 +165,34 @@ def _derive_flow_chart_values(rows):
         final_airway  – device name of the last airway-management entry
     All values are strings.
     """
-    first_access = ""
-    last_airway  = ""
+    first_access = "NULL"
+    last_airway  = "NULL"
     epi_count    = 0
 
     for row in rows:
         treatment   = _val(row.get("Treatment"))
         description = _val(row.get("Description"))
+        combined_text = f"{treatment} {description}".strip()
 
-        if not first_access and _ACCESS_RE.search(treatment):
+        if first_access == "NULL":
             route_match = _ROUTE_RE.search(description)
-            if route_match:
-                first_access = route_match.group(1).strip()
-            elif " - " in treatment:
-                first_access = treatment.split(" - ")[-1].strip()
-            else:
-                first_access = treatment
+            search_space = route_match.group(1).strip() if route_match else combined_text
+            for pattern, canonical in _FIRST_ACCESS_PATTERNS:
+                if pattern.search(search_space):
+                    first_access = canonical
+                    break
 
-        if _EPI_RE.search(f"{treatment} {description}"):
+        if _EPI_RE.search(combined_text):
             epi_count += 1
 
-        if _AIRWAY_RE.search(treatment):
-            last_airway = treatment
-
-    if " - " in last_airway:
-        last_airway = last_airway.split(" - ")[-1].strip()
+        for pattern, canonical in _AIRWAY_PATTERNS:
+            if pattern.search(combined_text):
+                last_airway = canonical
+                break
 
     return {
         "first_access": first_access,
-        "epi_count":    str(epi_count) if epi_count else "",
+        "epi_count":    str(epi_count),
         "final_airway": last_airway,
     }
 
